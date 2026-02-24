@@ -1,36 +1,42 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-export async function requestNotificationPermission() {
+/**
+ * REQUIRED for SDK 54
+ */
+Notifications.setNotificationHandler({
+  handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true, // ✅ NEW
+    shouldShowList: true,   // ✅ NEW
+  }),
+});
+
+export async function scheduleMedicineReminder() {
+  // web par notifications avoid
   if (Platform.OS === "web") return;
 
-  const { status } = await Notifications.getPermissionsAsync();
+  const { status } = await Notifications.requestPermissionsAsync();
   if (status !== "granted") {
-    await Notifications.requestPermissionsAsync();
+    throw new Error("Permission not granted");
   }
-}
-
-export async function scheduleMedicineReminder(seconds: number = 10) {
-  if (Platform.OS === "web") return;
-
-  await requestNotificationPermission();
-
-  const trigger = {
-    seconds,
-    repeats: false,
-  } as Notifications.TimeIntervalTriggerInput; // ✅ MAIN FIX
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Medicine Reminder 💊",
+      title: "💊 Medicine Reminder",
       body: "Time to take your medicine",
     },
-    trigger,
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 10,
+      repeats: false,
+    },
   });
 }
 
 export async function cancelAllReminders() {
   if (Platform.OS === "web") return;
-
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
