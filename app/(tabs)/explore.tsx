@@ -1,67 +1,104 @@
-import { View, Text } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { View, Text, StyleSheet, Button, Alert, Platform } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { medicines } from "../../src/utils/data/medicines";
+import {
+  scheduleMedicineReminder,
+  cancelAllReminders,
+} from "../../src/utils/reminder";
+
+type Medicine = {
+  use: string;
+  dose: string;
+  expiry: string;
+  reminder?: boolean;
+};
 
 export default function ExploreScreen() {
-  const { name } = useLocalSearchParams();
+  const { name } = useLocalSearchParams<{ name?: string }>();
 
-  const medicineInfo: any = {
-    paracetamol: {
-      use: 'Fever & pain relief',
-      dose: '1 tablet after food',
-      expiry: 'Usually 2 years from manufacture',
-    },
-    aspirin: {
-      use: 'Pain relief',
-      dose: 'As prescribed',
-      expiry: '18–24 months',
-    },
+  if (!name) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>No medicine selected</Text>
+      </View>
+    );
+  }
+
+  const medicine = medicines[name.toLowerCase() as keyof typeof medicines] as
+    | Medicine
+    | undefined;
+
+  if (!medicine) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>Medicine not found</Text>
+      </View>
+    );
+  }
+
+  const handleReminderOn = async () => {
+    if (Platform.OS === "web") {
+      Alert.alert("Web Support", "Notifications web par support nahi karti");
+      return;
+    }
+
+    await scheduleMedicineReminder(10); // 10 seconds demo
+    Alert.alert("Reminder ON", "Medicine reminder set successfully");
   };
 
- const medicineName =
-  typeof name === 'string'
-    ? name.trim().toLowerCase()
-    : Array.isArray(name)
-    ? name[0].trim().toLowerCase()
-    : '';
+  const handleReminderOff = async () => {
+    if (Platform.OS === "web") return;
 
-const data = medicineInfo[medicineName];
-
+    await cancelAllReminders();
+    Alert.alert("Reminder OFF", "All medicine reminders removed");
+  };
 
   return (
-    <View style={{ flex:1, padding:20, justifyContent:'center' }}>
-      
-      <Text style={{ fontSize:22, fontWeight:'bold', marginBottom:10 }}>
-        Medicine Search Result
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>{name.toUpperCase()}</Text>
 
-      <Text style={{ fontSize:18 }}>
-        You searched for:
-      </Text>
+      <Text style={styles.label}>Use:</Text>
+      <Text>{medicine.use}</Text>
 
-      <Text style={{ fontSize:24, color:'green', marginBottom:20 }}>
-        {name}
-      </Text>
+      <Text style={styles.label}>Dose:</Text>
+      <Text>{medicine.dose}</Text>
 
-      {data ? (
-        <>
-          <Text style={{ fontSize:18 }}>
-            Use: {data.use}
-          </Text>
+      <Text style={styles.label}>Expiry:</Text>
+      <Text>{medicine.expiry}</Text>
 
-          <Text style={{ fontSize:18 }}>
-            Dose: {data.dose}
-          </Text>
+      <View style={styles.reminderBox}>
+        <Text style={styles.label}>Reminder:</Text>
 
-          <Text style={{ fontSize:18, marginTop:10 }}>
-            Expiry: {data.expiry}
-          </Text>
-        </>
-      ) : (
-        <Text style={{ color:'red', fontSize:18 }}>
-          Medicine not found
+        <Text style={{ color: "green", marginBottom: 8 }}>
+          Manual reminder available
         </Text>
-      )}
 
+        <Button title="Reminder ON" onPress={handleReminderOn} />
+        <View style={{ height: 10 }} />
+        <Button title="Reminder OFF" onPress={handleReminderOff} />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  label: {
+    marginTop: 10,
+    fontWeight: "bold",
+  },
+  reminderBox: {
+    marginTop: 20,
+  },
+  error: {
+    fontSize: 18,
+    color: "red",
+  },
+});
