@@ -54,7 +54,7 @@ export default function HomeScreen() {
           padding: 15,
           borderRadius: 8,
         }}
-        onPress={() => router.push('/(tabs)/scan')}
+        onPress={() => router.push('/(tabs)/scan') 
       >
         <Text style={{ color: 'white', textAlign: 'center' }}>
           Scan Medicine
